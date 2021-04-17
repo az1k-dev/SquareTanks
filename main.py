@@ -6,7 +6,7 @@ import random
 
 pygame.init()
 
-# Настройки программы
+# Program settings
 FPS = 60
 
 SCREEN_SIZE = (1800, 900)
@@ -19,36 +19,35 @@ COLORS = ['green', 'red']
 
 screen = pygame.display.set_mode(SCREEN_SIZE)
 
-# Загружаем звуки
+# Load sounds
 BOOM_SOUND = pygame.mixer.Sound('data/boom_sound.wav')
 SHOT_SOUND = pygame.mixer.Sound('data/shot_sound.wav')
 MUSIC = pygame.mixer.Sound('data/music.wav')
 RELOAD_SOUND = pygame.mixer.Sound('data/reload_sound.wav')
 
 
+# Function for calculating sin(from degrees)
 def sin(x):
-    # Функция для вычисления синуса угла x(в градусах)
     return math.sin(math.radians(x))
 
 
+# Function for calculating cos(from degrees)
 def cos(x):
-    # Функция для вычисления косинуса угла x(в градусах)
     return math.cos(math.radians(x))
 
 
+# Function for calculating hypotenuse(from a, b)
 def hypotenuse(a, b):
-    # Функция для вычисления гипотенузы с помощью катетов a и b
     return math.sqrt(a ** 2 + b ** 2)
 
 
+# Function for image loading
 def load_image(name, colorkey=None):
-    # Функция для загрузки изображения
-
-    # Находим путь к изображению и загружаем
+    # Find path to image and load it
     fullname = os.path.join('data', name)
     image = pygame.image.load(fullname).convert()
 
-    # Делаем изображение прозрачным
+    # Make image transparent
     if colorkey is not None:
         if colorkey == -1:
             colorkey = image.get_at((0, 0))
@@ -56,34 +55,32 @@ def load_image(name, colorkey=None):
     else:
         image = image.convert_alpha()
 
-    # Возвращается изображение
     return image
 
 
+# Function for getting level's list
 def get_level_list():
-    # Функция для получения списка уровней
     return os.listdir('levels')
 
 
+# Function for loading levels
 def load_level(filename):
-    # Функция для загрузки уровни
-
-    # Создается полный путь к уровню
+    # Create full path to level
     filename = "levels/" + filename
 
-    # Открывается и читается файл
+    # Open and read level file
     with open(filename, 'r') as level_file:
         level_map = [line.strip() for line in level_file]
 
-    # Находится максимальная длина строки
+    # Find max width of string
     max_width = max(map(len, level_map))
 
-    # Возвращается список с заполнением пустых строк
+    # Return level with emptiness completion
     return list(map(lambda x: x.ljust(max_width, '0'), level_map))
 
 
+# Class for border of game field
 class Border(pygame.sprite.Sprite):
-    # Класс ограничителя краев игрового поля
     def __init__(self, x1, y1, x2, y2, edge):
         super().__init__(borders)
         self.edge = edge
@@ -95,12 +92,12 @@ class Border(pygame.sprite.Sprite):
             self.plane = 1
 
 
+# Class of the tank sprite
 class Tank(pygame.sprite.Sprite):
-    # Класс танка
     def __init__(self, pos, color, number, *groups):
         super().__init__(groups)
 
-        # Параметры танка
+        # Tank's options
         self.rotate_speed = 180
         self.speed = 200
         self.reload_time = 1
@@ -108,7 +105,7 @@ class Tank(pygame.sprite.Sprite):
         self.color = color
         self.number = number
 
-        # Изменяемые параметры танка
+        # Changeable tank's options
         self.gun_angle = 0
         self.body_angle = 90
         self.reload_frames = 0
@@ -120,31 +117,33 @@ class Tank(pygame.sprite.Sprite):
 
         self.bullets = []
 
-        # Загрузка оригинальных изображений корпуса и башни танка
+        # Load tank's images
         self.body_image = load_image(f'tank_body_{color}.png')
         self.gun_image = load_image(f'tank_barrel_{color}.png', 0)
 
-        # Создание изображений и прямоугольников корпуса и башни танка
-        self.body = pygame.transform.rotate(self.body_image, (self.body_angle + 90) % 360)
+        # Create tank's image and borders
+        self.body = pygame.transform.rotate(self.body_image,
+                                            (self.body_angle + 90) % 360)
         self.rect = self.body.get_rect()
         self.rect.x, self.rect.y = pos
 
         self.gun = self.gun_image.copy()
         self.gun_rect = self.gun.get_rect(center=self.rect.center)
 
+    # Function for gun rotating
     def rotate_gun(self, right=True):
-        # Функция для поворота башни танка
-        # Параметр right - направление поворота(True - по часовой стрелке, False - против)
+        # right option - direction of rotating
+        # (True - clockwise, False - counterclockwise)
         if right:
             self.gun_angle = (self.gun_angle + self.rotate_speed / FPS) % 360
         else:
             self.gun_angle = (self.gun_angle - self.rotate_speed / FPS) % 360
 
+    # Function for tank's move
     def move(self, direction):
-        # Функция для движения танка
-        # Параметр direction - направление движения(up, down, right, left)
+        # direction option - direction of move(up, down, right, left)
 
-        # Проверка того, что в этот кадр движение еще не выполнено
+        # Check if tank not moved in frame
         if self.not_moved_in_frame:
             # Словарь с параметрами для каждого из направлений движения
             direction_dict = {
@@ -154,55 +153,64 @@ class Tank(pygame.sprite.Sprite):
                 'left': {'plane': 0, 'direction': -1, 'angle': 0},
             }
 
-            # Получение параметром для текущего направления
+            # Get current direction parameters
             direction_params = direction_dict[direction]
 
-            # Изменение координат границ танка и угла направления танка
-            self.rect[direction_params['plane']] += int(self.speed / FPS) * direction_params[
-                'direction']
+            # Edit tank's coordinates and body angle
+            self.rect[direction_params['plane']] += int(self.speed / FPS) * \
+                                                    direction_params['direction']
+
             self.body_angle = direction_params['angle']
 
-            # Изменение параметра для исключения возможности нескольких движений за ход
+            # Edit parameter for exclude situation
+            # of more than one move in frame
             self.not_moved_in_frame = False
 
-            # Проверка на столкновение с препятствиями(блоки, танки)
-            collision_blocks = pygame.sprite.spritecollide(self, obstacles, False)
+            # Check if tank have collision
+            collision_blocks = pygame.sprite.spritecollide(
+                self, obstacles, False
+            )
+
             collision_blocks.remove(self)
 
-            # При наличии столкновения запустить цикл для
-            # возвращения танка в положение без столкновения
+            # If there is collision, start cycle
+            # for return tank to start coordinates
             while collision_blocks:
-                # Запускается функция для возвращения танка к состоянию без столкновения
-                self.control_collision(collision_blocks[0], direction_params['plane'])
+                # Start function for return tank to start coordinates
+                self.control_collision(collision_blocks[0],
+                                       direction_params['plane'])
 
-                # Проверка на столкновение с препятствиями(блоки, танки)
-                collision_blocks = pygame.sprite.spritecollide(self, obstacles, False)
+                # Check tank's collision
+                collision_blocks = pygame.sprite.spritecollide(
+                    self, obstacles, False
+                )
+
                 collision_blocks.remove(self)
 
-            # Проверка на столкновение с ограничителями
+            # Check tank's collision with borders
             collision_border = pygame.sprite.spritecollide(self, borders, False)
 
-            # При наличии столкновений возвращаем танк в положение без столкновения
+            # If there is collision with borders,
+            # return tank to start coordinates
             for collide in collision_border:
                 self.rect[collide.plane] = \
                     (SCREEN_SIZE[collide.plane] - 50) * collide.edge
 
+    # Function for returning tank to start coordinates without collision
     def control_collision(self, collide, i):
-        # Функция для возвращения танка в положение без столкновения
         if self.rect[i] < collide.rect[i]:
             self.rect[i] = collide.rect[i] - self.rect.size[i]
         else:
             self.rect[i] = collide.rect[i] + collide.rect.size[i]
 
+    # Function for starting new round if tank is destroyed
     def check_destroy(self):
-        # Функция для начала нового раунда при уничтожении танка
-
-        # Проверка уничтожения танка
+        # Check if tank is destroyed
         if self.destroyed:
-            # Если обратный отсчет не равен нулю, то уменьшение обратного отсчета
+            # If countdown not equal 0 decrease countdown
             if self.new_round_countdown != 0:
                 self.new_round_countdown -= 1
-            # Если обратный отсчет равен нулю, то начало нового раунда
+            # If countdown equal 0 start new round
             elif self.new_round_countdown == 0:
                 new_round()
 
