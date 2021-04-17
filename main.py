@@ -62,7 +62,7 @@ def load_image(name, colorkey=None):
 
 def get_level_list():
     # Функция для получения списка уровней
-    return os.listdir('./levels')
+    return os.listdir('levels')
 
 
 def load_level(filename):
