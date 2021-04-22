@@ -215,15 +215,16 @@ class Tank(pygame.sprite.Sprite):
                 new_round()
 
     def action(self, command):
-        # Функция для передачи команд для танка
-        # Параметр command - команда для танка. Передается в виде команда/параметр.
+        # Function for pass commands to tank
+        # command parameter - command for tank
+        # command format - command/parameter
 
-        # Проверка неуничтожения танка
+        # Check tank isn't destroyed
         if not self.destroyed:
-            # Разделение входной команды на команду и параметр
+            # Separate command to command and perameter
             command, parameter = command.split('/')
 
-            # Выполнение команды
+            # Command doing
             if command == 'move':
                 self.move(parameter)
             elif command == 'rotate_gun':
@@ -232,95 +233,104 @@ class Tank(pygame.sprite.Sprite):
                 self.fire()
 
     def update(self):
-        # Обновление танка с новым кадром
+        # Update tank in new frame
         if not self.destroyed:
-            # Изменение параметра для исключения возможности нескольких движений за ход
+            # Update parameter for checking if tank moved in current frame
             self.not_moved_in_frame = True
 
-            # Изменение изображения танка по направлению танка
-            self.body = pygame.transform.rotate(self.body_image, (self.body_angle + 90) % 360)
+            # Edit tank's image by direction
+            self.body = pygame.transform.rotate(
+                self.body_image, (self.body_angle + 90) % 360
+            )
 
-            # Изменение изображения пушки и прямоугольника по направлению пушки
+            # Edit gun's image and gun's rectangle by direction
             self.gun = pygame.transform.rotate(self.gun_image, self.gun_angle)
             self.gun_rect = self.gun.get_rect(center=self.rect.center)
 
-            # Уменьшение количества кадров до перезарядки
+            # Reduce frame's count to gun reload
             if self.reload_frames > 0:
                 self.reload_frames -= 1
 
-            # Получение действующих снарядов кроме своих
+            # Get all bullet's without own
             frame_bullets = bullets.copy()
             for i in self.bullets:
                 frame_bullets.remove(i)
 
-            # Проверка на пересечение со снарядами
+            # Check if tank collides with bullets
             bullets_collide = pygame.sprite.spritecollideany(self, frame_bullets)
             if bullets_collide:
-                # При пересечении снаряд уничтожается и запускается функция по уничтожению танка
+                # If tank collides with bullets, start boom function
                 bullets_collide.destroy()
                 self.boom()
 
     def boom(self):
-        # Функция по уничтожению танка
+        # Tank destroying function
 
-        # Воспроизводится звук взрыва
+        # Boom sound playing
         BOOM_SOUND.set_volume(1)
         BOOM_SOUND.play()
 
-        # Меняется переменная для проверки уничтожения танка
+        # Switch variable of tank's destroying
         self.destroyed = True
 
-        # Запускается анимация взрыва
+        # Start explosion animation
         Explosion(self.rect.center, 1)
 
-        # Создается пустая функция
+        # Create empty function - stub
         def destroyed_draw(surface):
             pass
 
-        # Функции отрисовок меняются на пустую
+        # Drawing functions replace with empty function
         self.draw_body = destroyed_draw
         self.draw_gun = destroyed_draw
 
-        # Спрайт удаляется из групп
+        # Delete sprites from lists of sprites
         tanks.remove(self)
         obstacles.remove(self)
 
-        # Пополняется счет выигравшего танка
-        global player_1_count, player_2_count
+        # Increase player's score
+        global player_1_score, player_2_score
         if self.number == 1:
-            player_1_count += 1
+            player_1_score += 1
         if self.number == 2:
-            player_2_count += 1
+            player_2_score += 1
 
     def draw_body(self, surface):
-        # Функция отрисовки корпуса танка
+        # Function for drawing tank's body
         surface.blit(self.body, self.rect)
 
     def draw_gun(self, surface):
-        # Функция отрисовки пушки танка
+        # Function for drawing tank's gun
         surface.blit(self.gun, self.gun_rect)
 
     def fire(self):
-        # Функция выстрела
+        # Fire function
 
-        # Проверка заряженности оружия танка и неуничтоженности танка
+        # Check if tank isn't destroyed and gun reloaded
         if not self.destroyed and self.reload_frames == 0:
-            # Заряженность танка возвращается к незаряженному
+            # Tank reloading switched to off
             self.reload_frames = self.orig_reload_frames
 
-            # Вычисляются координаты снарядаи создается снаряд
+            # Calculate bullet's coordinates
             x = self.rect.center[0] - 5 - sin(self.gun_angle) * 40
             y = self.rect.center[1] - 5 - cos(self.gun_angle) * 40
-            self.bullets.append(Bullet([x, y], self.bullet_speed, 270 - self.gun_angle, self.color))
+            self.bullets.append(
+                Bullet(
+                    [x, y],
+                    self.bullet_speed,
+                    270 - self.gun_angle,
+                    self.color
+                )
+            )
 
-            # Вопспроизводится звук выстрела
+            # Play shot sound
             SHOT_SOUND.play()
 
 
 class Block(pygame.sprite.Sprite):
-    # Класс блока
+    # Block class
     def __init__(self, pos, *groups):
-        # Функция инициализации блока
+        # Function of block initialization
         super().__init__(groups)
         self.image = load_image('block.png')
         self.rect = self.image.get_rect()
@@ -328,13 +338,13 @@ class Block(pygame.sprite.Sprite):
 
 
 class Bullet(pygame.sprite.Sprite):
-    # Класс снаряда
+    # Bullet class
 
     def __init__(self, pos, v, vector, color):
-        # Функция инициализации снаряда
+        # Function of bullet initialization
         super().__init__(bullets)
 
-        # Вычисление скоростей
+        # Calculate velocity of bullet
         self.v = v
         self.v_x = v * cos(vector)
         self.v_y = v * sin(vector)
@@ -342,105 +352,108 @@ class Bullet(pygame.sprite.Sprite):
         self.pos = pos
         self.vector = vector
 
-        # Создание изображения и прямоугольника спрайта
-        self.image = pygame.transform.rotate(load_image(f'bullet_{color}.png', -1),
-                                             270 - vector)
+        # Create bullet's image and bullet's rectangle
+        self.image = pygame.transform.rotate(
+            load_image(f'bullet_{color}.png', -1), 270 - vector
+        )
+
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = self.pos
 
     def update(self):
-        # Функция обновления с новым кадром
+        # Function for updating bullet with new frame
 
-        # Обновление координат снаряда
+        # Update bullet's coordinates
         self.pos[0] += self.v_x / FPS
         self.pos[1] += self.v_y / FPS
         self.rect.x, self.rect.y = self.pos
 
-        # Проверка на пересечение с блоками
+        # Check if bullet collides with blocks
         if pygame.sprite.spritecollideany(self, blocks):
-            # Уничтожаем снаряд
+            # Destroy bullet
             self.destroy()
 
-            # Воспроизведение звука взрыва с уменьшением звука
+            # Play muted boom sound
             BOOM_SOUND.set_volume(0.1)
             BOOM_SOUND.play()
 
-            # Запускается анимация взрыва
+            # Start explosion animation
             Explosion(self.rect.center, 0.2)
 
-        # Проверка на столкновение с другими снарядами
+        # Check if bullet collides with other bullets
         bullet_collide = pygame.sprite.spritecollide(self, bullets, False)
         if self in bullet_collide:
             bullet_collide.remove(self)
 
-        # При столкновении с другими снарядами:
+        # If bullet collides with other bullets
         if bullet_collide:
-            # Уничтожаем снаряды
+            # Destroy bullets
             bullet_collide[0].destroy()
             self.destroy()
 
-            # Воспроизведение звука взрыва с уменьшением звука
+            # Play muted boom sound
             BOOM_SOUND.set_volume(0.2)
             BOOM_SOUND.play()
 
-            # Запускается анимация взрыва
+            # Start explosion animation
             Explosion(self.rect.center, 0.3)
 
     def destroy(self):
-        # Уничтожение снаряда
+        # Function of bullet destoroying
         bullets.remove(self)
 
     def draw(self, screen):
-        # Фукция отрисовки снаряда
+        # Function of bullet drawing
         screen.blit(self.image, self.rect)
 
 
 class Explosion(pygame.sprite.Sprite):
-    # Класс анимации взрыва
+    # Explosion animation class
 
     def __init__(self, center, size):
-        # Инициализация класса
+        # Explosion animation initialization
         super(Explosion, self).__init__(booms)
 
-        # Создание списка изображений анимации с их изменением на коэффицент size
+        # Create list of animation images with their editing with ratio "size"
         self.explosion_anim = [pygame.transform.scale(load_image(f'explosion ({i + 1}).png', -1), (
             list(map(lambda s: int(s * size),
                      load_image(f'explosion ({i + 1}).png', -1).get_rect()[2:])))) for i in range(9)]
 
-        # Создание изображения анимации и прямоугольника
+        # Create image of animation and rectangle
         self.image = self.explosion_anim[0]
         self.rect = self.image.get_rect()
         self.rect.center = center
 
-        # Настройка кадров для анимации
+        # Set frames for animation
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
         self.frame_rate = 50
         self.killed = False
 
     def update(self):
-        # Обновление анмации
+        # Function for animation updating
         if not self.killed:
-            # Получение номера нынешнего кадра
+            # Get number of current frame
             now = pygame.time.get_ticks()
-            # Проверка на прошествие определенного времени
+            # Check if time from last frame has passed definitive time
             if now - self.last_update > self.frame_rate:
                 self.last_update = now
                 self.frame += 1
 
+                # If current frame is last
                 if self.frame == len(self.explosion_anim):
-                    # Уничтожение анимации
+                    # Destroy animation
                     self.killed = True
                     booms.remove(self)
                 else:
-                    # Отображение следующего изображения
+                    # Draw next frame
                     center = self.rect.center
                     self.image = self.explosion_anim[self.frame]
                     self.rect = self.image.get_rect()
                     self.rect.center = center
 
 
-# Создание ограничителей
+# Create borders
 borders = pygame.sprite.Group()
 
 Border(0, height, width, height, 1)
@@ -448,7 +461,7 @@ Border(0, 0, width, 0, 0)
 Border(width, 0, width, height, 1)
 Border(0, 0, 0, height, 0)
 
-# Словари настроек кнопок игрока 1 и 2
+# Dicts with settings of keyboards for players
 PLAYER_1_KEYS = {
     pygame.K_w: 'move/up',
     pygame.K_a: 'move/left',
@@ -469,41 +482,41 @@ PLAYER_2_KEYS = {
     pygame.K_KP0: 'fire/'
 }
 
-# Список команд клавиши которых сбрасываются после нажатия
+# List of commands, which removing when key pushing
 REMOVE_COMMANDS = [
     'fire/',
 ]
 
 
 def terminate():
-    # Функция по закрытию программы
+    # Function of game closing
     pygame.quit()
     sys.exit()
 
 
 def new_match():
-    # Функция по запуску нового матча
+    # Function of starting new match
 
     RELOAD_SOUND.play()
 
-    # Обнуление результатов
-    global player_1_count, player_2_count
-    player_1_count = 0
-    player_2_count = 0
+    # Zeroing of player's counts
+    global player_1_score, player_2_score
+    player_1_score = 0
+    player_2_score = 0
     new_round()
 
 
 def new_round():
-    # Функция по запуску нового раунда
+    # Function of starting new round
     global all_sprites, obstacles, booms, tanks, bullets, blocks
 
-    # Переменная для проверки паузы
+    # Variable for check if now is pause
     pause = False
 
-    # Получение случайного названия уровня
+    # Get random level name
     level_name = random.choice(get_level_list())
 
-    # Создание пустых групп спрайтов
+    # Create empty lists of sprites
     all_sprites = pygame.sprite.Group()
     obstacles = pygame.sprite.Group()
     booms = pygame.sprite.Group()
@@ -511,58 +524,70 @@ def new_round():
     bullets = pygame.sprite.Group()
     blocks = pygame.sprite.Group()
 
-    # Загрузка уровня
+    # Load levels
     level = load_level(level_name)
 
-    # Загрузка блоков по уровню
+    # Load blocks by level scheme
     for y in range(-1, len(level)):
         line = level[y]
         for x in range(len(line)):
             if line[x] == '*':
                 Block([x, y], blocks, all_sprites, obstacles)
             elif line[x] == '1':
-                tank_1 = Tank([12.5 + x * 75, 12.5 + y * 75], COLORS[0], 2, tanks, obstacles,
-                              all_sprites)
+                tank_1 = Tank(
+                    [12.5 + x * 75, 12.5 + y * 75],
+                    COLORS[0],
+                    2,
+                    tanks,
+                    obstacles,
+                    all_sprites
+                )
             elif line[x] == '2':
-                tank_2 = Tank([12.5 + x * 75, 12.5 + y * 75], COLORS[1], 1, tanks, obstacles,
-                              all_sprites)
+                tank_2 = Tank(
+                    [12.5 + x * 75, 12.5 + y * 75],
+                    COLORS[1],
+                    1,
+                    tanks,
+                    obstacles,
+                    all_sprites
+                )
 
-    # Создание списка для хранения нажатых кнопок
+    # Create list for pushed buttons
     button_lst = []
 
-    # Основной цикл игры
+    # Main cycle of game
     while True:
-        # Заполнение фона голубым цветом
+        # Fill screen by bright-blue color
         screen.fill((125, 200, 255))
 
         keyup_lst = []
 
-        # Получение событий
+        # Get events
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
-                # Выключение программы
+                # Close game
                 terminate()
             if event.type == pygame.KEYDOWN:
-                # Добавление нажатой кнопки в список нажатых кнопок
+                # Add buttons to pushed buttons list
                 button_lst.append(event.key)
             if event.type == pygame.KEYUP:
                 if event.key in button_lst:
-                    # Удаление нажатой кнопки из списка нажатых кнопок
+                    # Delete button from pushed buttons list
                     button_lst.remove(event.key)
                 else:
-                    # Сохранение нажатой кнопки в список удалений
+                    # Add pushed button to delete list
                     keyup_lst.append(event.key)
 
-        # Удаление кнопок из списка основываясь на список удалений
+        # Delete buttons from pushed button list by delete list
         for key in keyup_lst:
             if key in button_lst:
                 button_lst.remove(key)
 
-        # Проверка паузы в игре
+        # Check pause
         if not pause:
 
-            # Выполнение действий по клавишам
+            # Performing actions by pushed buttons list
             for i in button_lst[::-1]:
                 if i in PLAYER_1_KEYS.keys():
                     command = PLAYER_1_KEYS[i]
@@ -581,22 +606,22 @@ def new_round():
                     pause = not pause
                     button_lst.remove(i)
 
-            # Запуск функции для запуска нового раунда при уничтожении танков
+            # Start function for new round if one of tanks is destroyed
             tank_1.check_destroy()
             tank_2.check_destroy()
 
-            # Обновление спрайтов
+            # Update sprites
             tanks.update()
             bullets.update()
             booms.update()
         else:
-            # Проверка на нажатие кнопки P для продолжения игры
+            # If pause, check P button is pressed to start game
             for i in button_lst:
                 if i == pygame.K_p:
                     pause = not pause
                     button_lst.remove(i)
 
-        # Отрисовка спрайтов
+        # Sprites drawing
         blocks.draw(screen)
         for i in bullets.sprites():
             i.draw(screen)
@@ -606,10 +631,13 @@ def new_round():
         for i in tanks.sprites():
             i.draw_gun(screen)
 
-        # Создание и отрисовка текста счета игроков
+        # Create and draw text of score
         font = pygame.font.Font(None, 60)
-        players_count_text = font.render(str(player_1_count) + '    ' + str(player_2_count), 1,
-                                         pygame.Color('white'))
+        players_count_text = font.render(
+            str(player_1_score) + '    ' + str(player_2_score),
+            1,
+            pygame.Color('white')
+        )
         text_rect = players_count_text.get_rect(center=[SCREEN_SIZE[0] // 2, 30])
         screen.blit(players_count_text, text_rect)
 
@@ -618,12 +646,12 @@ def new_round():
 
 
 def start_screen():
-    # Функция отображения главного экрана
+    # Function of start screen
 
-    # Воспроизводится звук
+    # Play start screen music
     MUSIC.play(-1)
 
-    # Текст, который отрисовывается на главном экране
+    # Text, which drawing in start screen
     intro_text = ["SquareTanks",
                   "Байрамов Азамат",
                   " ",
@@ -643,7 +671,7 @@ def start_screen():
                   "Для выхода из игры нажмите Esc",
                   ]
 
-    # Отрисовка текста
+    # Draw text
     fon = pygame.transform.scale(load_image('fon.png'), SCREEN_SIZE)
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
@@ -657,21 +685,21 @@ def start_screen():
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
-    # Цикл главного экрана
+    # Start screen cycle
     while True:
-        # Получение событий
+        # Get events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                # Выключение программы
+                # Close game
                 terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    # Выключение программы
+                    # Close game
                     terminate()
                 else:
-                    # Остановка музыки
+                    # Stop music
                     MUSIC.stop()
-                    # Запуск нового матча
+                    # Start new match
                     new_match()
 
         clock.tick(FPS)
