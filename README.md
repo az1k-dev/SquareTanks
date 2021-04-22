@@ -11,6 +11,9 @@ This is a game, where two players control tanks and fight each other.
 #### Supported languages
 + Russian
 
+#### Materials
+Materials(some sprites, sounds and music) for the project are taken from open sources
+
 ## GIF(small FPS)
 ![gif](http://g.recordit.co/5Jzs30ukJt.gif)
 
